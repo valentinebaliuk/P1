@@ -1,5 +1,5 @@
 all:
-	g++ -Wall -Werror test.c -o test -pthread	
+	g++ -Wall -Werror P1.c -o P1 -pthread	
 
 
 
