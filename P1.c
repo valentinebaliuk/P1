@@ -45,7 +45,7 @@ void* barmen(){
 }
 void* function(struct Smoker smoker){
 	while(true){
-                //chcę zabłokować tutaj, dopóki nie będzie sygnału z Switch{case} wyżej
+                //chcę zabłokować tutaj, dopóki nie będzie sygnału z Switch{case} wyżej, jak?
 		pthread_mutex_lock();
 		pthread_cond_wait(&cond[smoker.resources],&mutex[smoker.resources]);
                 	        
