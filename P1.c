@@ -9,6 +9,7 @@ using namespace std;
 int SmokersInBuffer=0;
 pthread_mutex_t mutex[3];//trzy muteksy, każdy odpowiada za czekanie na odpowiednie dwa składniki
 pthread_cond_t cond[3];
+pthread_mutex_t mutexme;
 pthread_mutex_t mut;
 bool TobaccoAndPaper;
 bool PaperAndMatches;
@@ -32,9 +33,10 @@ struct Smoker{
 };
 vector<Smoker> smokers;
 vector<Smoker> readyToSmoke;
-void* bufChecker(){
+void* bufChecker(void *){
 	while(true){
 		if(SmokersInBuffer>=2){
+			cout<<"pop"<<'\n';
 			pthread_mutex_lock(&mut);
 			for(int i=0;i<2;i++){
 				cout<<readyToSmoke[0].name<<"\n";
@@ -48,7 +50,7 @@ void* bufChecker(){
 	}
 	return 0;
 }
-void* barmen(){
+void* barmen(void *){
 	int res=rand()%3;
         switch(res){
             	case 0: pthread_cond_signal(&cond[0]);
@@ -60,17 +62,21 @@ void* barmen(){
       	}
 	return 0;
 }
-void* function(void *smoker){
 
+void* function(void *smoker){
+	struct Smoker *smok =(struct Smoker *) smoker;
 	while(true){
-		struct Smoker *smoker = (struct Smoker *) smoker;
- 		pthread_cond_wait(&cond[smoker->resources],&mutex[smoker->resources]);
-		pthread_mutex_lock(&mut);		
-		pthread_mutex_lock(&mutex[smoker->resources]);
-		readyToSmoke.push_back(&(&smoker));
- 		smoker->inBuffer=true;
-		SmokersInBuffer++;
-		pthread_mutex_unlock(&mutex[smoker->resources]);
+		pthread_cond_wait(&cond[smok->resources],&mutex[smok->resources]);
+
+		pthread_mutex_lock(&mut);	
+						cout<<"sos"<<'\n';	
+		pthread_mutex_lock(&mutexme);
+		if(smokers[smok->id].inBuffer==false){		
+			readyToSmoke.push_back(*smok);
+ 			smok->inBuffer=true;
+			SmokersInBuffer++;
+		}
+		pthread_mutex_unlock(&mutexme);
 		pthread_mutex_unlock(&mut);
 	}
 	return 0;
@@ -86,10 +92,15 @@ int main(){
 		smokers.push_back(Smoker(i));
                 
 	}
+	
 	/*tworzenie wątków losowych palaczy*/ 
 	for(int i=0;i<n;i++){
+		pthread_t thread1;
+		smokers_threads.push_back(thread1);
 		pthread_create(&smokers_threads[i],NULL,function,(void*)&smokers[i]);
+
 	}
+	
 	/*uruchamianie procesu, który sprawdza zawartość bufora i uruchamia wątki palenia, jeśli liczba gotowych do palenia jest >=2*/
         pthread_t bufferproc;
 	pthread_create(&bufferproc,NULL,bufChecker,NULL);
@@ -97,7 +108,7 @@ int main(){
 	while(SmokersInBuffer<2){
 		pthread_t barm;		
 		pthread_create(&barm,NULL,barmen,NULL);
-
+				
 	}
 	/*jeśli bufferproc się skończy tzn, że 2 palaczy wypaliło swoje papierosy*/
 	pthread_join(bufferproc,NULL);
