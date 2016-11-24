@@ -4,7 +4,10 @@
 #include <time.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include<cstdio>
+#include <cstdio>
+#include <ctime>
+#include <cstdlib>
+#include <unistd.h>
 
 using namespace std;
 int us=0;
@@ -203,6 +206,7 @@ int main(){
 				pthread_t barm;
 				pthread_create(&barm,NULL,barmen,NULL);
 				pthread_join(barm,NULL);
+				sleep(1);
 				pthread_mutex_lock(&mutexme);
 			
 				
