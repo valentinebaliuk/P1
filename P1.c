@@ -6,15 +6,12 @@
 #include <pthread.h>
 
 using namespace std;
+int us=0;
 int SmokersInBuffer=0;
-int qw=0;
 pthread_mutex_t mutex[3];//trzy muteksy, każdy odpowiada za czekanie na odpowiednie dwa składniki
 pthread_cond_t cond[3];
 pthread_mutex_t mutexme;
 pthread_mutex_t mut;
-bool TobaccoAndPaper;
-bool PaperAndMatches;
-bool MatchesAndTobacco;
 string listOfNames[10]={"Warren","Lowell","Elliot","Chas","Trent","Elvin","Edison","Bryce","Lonny","Alex"};
 
 vector<pthread_t> smokers_threads;
@@ -25,19 +22,19 @@ struct Smoker{
 	int id; 	
 	int resources;//wartość-to jakiś ze składników
    	bool inBuffer;
-        Smoker(int num){
+        /*Smoker(int num){
 		id=num;
            	name=listOfNames[rand()%10];
                 resources=rand()%3;
 		cout<<name<<" "<<resources<<"\n";
 	        inBuffer=false;
-        }
-	/*Smoker(int i,string nam, int resour){
+        }*/
+	Smoker(int i,string nam, int resour){
 		id=i;
 		name=nam;
 		resources=resour;
 		inBuffer=false;
-	}*/
+	}
 };
 vector<Smoker> smokers;
 vector<Smoker> readyToSmoke;
@@ -47,7 +44,8 @@ void* bufChecker(void *){
 			cout<<"pop"<<'\n';
 			pthread_mutex_lock(&mut);
 			for(int i=0;i<4;i++){
-				cout<<readyToSmoke[0].name<<"\n";
+								
+				cout<<readyToSmoke[0].id<<" "<<readyToSmoke[0].name<<" ";
 				cout<<readyToSmoke[0].resources<<'\n';
 				smokers[readyToSmoke[0].id].inBuffer=false;
                         	readyToSmoke.erase(readyToSmoke.begin());
@@ -59,36 +57,69 @@ void* bufChecker(void *){
 	}
 	return 0;
 }
+
+//robi to co bufChecker ale tylko raz
+/*void* bufChecker2(void *){
+	while(SmokersInBuffer>=4){
+		cout<<"pop"<<'\n';
+		pthread_mutex_lock(&mut);
+		for(int i=0;i<4;i++){
+			cout<<readyToSmoke[0].name<<"\n";
+			cout<<readyToSmoke[0].resources<<'\n';
+			smokers[readyToSmoke[0].id].inBuffer=false;
+                       	readyToSmoke.erase(readyToSmoke.begin());
+		}
+		SmokersInBuffer=SmokersInBuffer-4;		
+		pthread_mutex_unlock(&mut);
+		
+	}
+
+}*/
+
 void* barmen(void *){
-	int res=rand()%3;
-	cout<<res<<"\n";
-       
-        switch(res){
+	//int resources=rand()%3;
+	//cout<<resources<<"\n";
+	if(us==1){ pthread_cond_broadcast(&cond[2]);us=0;}
+	if(us==0){ pthread_cond_broadcast(&cond[1]);us=1;}
+	
+       /*switch(resources){
             	case 0: pthread_cond_signal(&cond[0]);
             	break;
             	case 1: pthread_cond_signal(&cond[1]);
             	break;
             	case 2: pthread_cond_signal(&cond[2]);
             	break;
-      	}
+      	}*/
+	
+	//broadcast wysyla sygnal do wszystkich kwalifikujacych sie palaczy
+	/*switch(resources){
+            	case 0: pthread_cond_broadcast(&cond[0]);
+            	break;
+            	case 1: pthread_cond_broadcast(&cond[1]);
+            	break;
+            	case 2: pthread_cond_broadcast(&cond[2]);
+            	break;
+      	}*/
+	
 	return 0;
 }
 
-void* function(void *smoker){
-	struct Smoker *smok =(struct Smoker *) smoker;
+void* func(void *smoker){
+	struct Smoker *smoker_in_func =(struct Smoker *) smoker;
 	while(true){
-		pthread_cond_wait(&cond[smok->resources],&mutex[smok->resources]);
-		pthread_mutex_lock(&mutexme);
+		pthread_cond_wait(&cond[smoker_in_func->resources],&mutex[smoker_in_func->resources]);
+		//pthread_mutex_lock(&mutexme);
 		pthread_mutex_lock(&mut);	
 							
 		
-		if(smokers[smok->id].inBuffer==false){	
-			cout<<"sos"<<'\n';	
-			readyToSmoke.push_back(*smok);
- 			smok->inBuffer=true;
+		if(smokers[smoker_in_func->id].inBuffer==false){	
+			cout<<smoker_in_func->name<<" Zapisuje"<<'\n';	
+			readyToSmoke.push_back(*smoker_in_func);
+ 			smoker_in_func->inBuffer=true;
 			SmokersInBuffer++;
+			////////
 		}
-		pthread_mutex_unlock(&mutexme);
+		//pthread_mutex_unlock(&mutexme);
 		pthread_mutex_unlock(&mut);
 	}
 	return 0;
@@ -97,24 +128,28 @@ void* function(void *smoker){
 
 int main(){
 	srand(time(NULL));
-        int n;
-	cin>>n;
+        int NumOfSmokers;
+	cin>>NumOfSmokers;
 	/*tworzenie vektoru losowych palaczy*/
-	for(int i=0;i<n;i++){
+	/*for(int i=0;i<NumOfSmokers;i++){
 		smokers.push_back(Smoker(i));
                 
-	}
+	}*/
 	
         
-	/*smokers.push_back(Smoker(0,"Jack",1));
+	smokers.push_back(Smoker(0,"Jack",1));
 	smokers.push_back(Smoker(1,"Alex",1));
-	smokers.push_back(Smoker(2,"Dima",0));
-	smokers.push_back(Smoker(3,"Mike",1));*/
+	smokers.push_back(Smoker(2,"Dima",1));
+	smokers.push_back(Smoker(3,"Mike",1));
+	smokers.push_back(Smoker(4,"Jack",2));
+	smokers.push_back(Smoker(5,"Alex",2));
+	smokers.push_back(Smoker(6,"Dima",2));
+	smokers.push_back(Smoker(7,"Mike",2));
 	/*tworzenie wątków losowych palaczy*/ 
-	for(int i=0;i<n;i++){
-		pthread_t thread1;
-		smokers_threads.push_back(thread1);
-		pthread_create(&smokers_threads[i],NULL,function,(void*)&smokers[i]);
+	for(int i=0;i<NumOfSmokers;i++){
+		pthread_t SmokerThread;
+		smokers_threads.push_back(SmokerThread);
+		pthread_create(&smokers_threads[i],NULL,func,(void*)&smokers[i]);
 
 	}
 	
@@ -124,11 +159,14 @@ int main(){
 		pthread_create(&bufferproc,NULL,bufChecker,NULL);
 	/*jeśli palaczy w buforze <2, losujemy jeszcze zasoby*/
 		
-		for(int i=0;i<4;i++){
-			cout<<"kok"<<'\n';
-			pthread_t barm;		
-			pthread_create(&barm,NULL,barmen,NULL);
-			pthread_join(barm,NULL);	
+		for(int i=0;i<5;i++){
+			cout<<"kok"<<" SmokersInBuffer = "<<SmokersInBuffer<<"    i = "<<i<<'\n';
+			if(SmokersInBuffer<4){
+				pthread_t barm;
+				pthread_create(&barm,NULL,barmen,NULL);
+				pthread_join(barm,NULL);
+			}
+				
 
 		}
 	
