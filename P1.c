@@ -1,4 +1,4 @@
-#include <iostream>
+//#include <iostream>
 #include <string>
 #include <vector>
 #include <time.h>
@@ -18,6 +18,7 @@ pthread_mutex_t mutexme;
 pthread_mutex_t mut;
 string listOfNames[10]={"Warren","Lowell","Elliot","Chas","Trent","Elvin","Edison","Bryce","Lonny","Alex"};
 int liczbawolnych[3];
+char tc[10];//tabl charow
 
 vector<pthread_t> smokers_threads;
 
@@ -46,12 +47,12 @@ vector<Smoker> readyToSmoke;
 void* bufChecker(void *){
 	while(true){
 		while(SmokersInBuffer>=4){
-			cout<<"pop"<<'\n';
+			puts("pop");//cout<<"pop"<<'\n';
 			pthread_mutex_lock(&mut);
 			for(int i=0;i<4;i++){
-								
-				cout<<readyToSmoke[0].id<<" "<<readyToSmoke[0].name<<" ";
-				cout<<readyToSmoke[0].resources<<'\n';
+				//for(int j=0;j<readyToSmoke[0].name.size();j++)tc[j]=readyToSmoke[0].name[j];			
+				printf("%d %d\n",readyToSmoke[0].id,readyToSmoke[0].resources);//cout<<readyToSmoke[0].id<<" "<<readyToSmoke[0].name<<" ";
+				//cout<<readyToSmoke[0].resources<<'\n';
 				smokers[readyToSmoke[0].id].inBuffer=false;
 				liczbawolnych[smokers[readyToSmoke[0].id].resources]++;
                         	readyToSmoke.erase(readyToSmoke.begin());
@@ -126,7 +127,7 @@ void* func(void *smoker){
 							
 		
 		if(smokers[smoker_in_func->id].inBuffer==false){	
-			cout<<smoker_in_func->name<<" Zapisuje"<<'\n';	
+			printf("%d Zapisuje\n",smoker_in_func->id);//cout<<smoker_in_func->name<<" Zapisuje"<<'\n';	
 			readyToSmoke.push_back(*smoker_in_func);
  			smoker_in_func->inBuffer=true;
 			SmokersInBuffer++;
@@ -147,7 +148,8 @@ void* func(void *smoker){
 int main(){
 	srand(time(NULL));
         int NumOfSmokers;
-	cin>>NumOfSmokers;
+	scanf("%d", &NumOfSmokers);//cin>>NumOfSmokers;
+
 	/*tworzenie vektoru losowych palaczy*/
 	/*for(int i=0;i<NumOfSmokers;i++){
 		smokers.push_back(Smoker(i));
@@ -195,7 +197,7 @@ int main(){
 		pthread_create(&bufferproc,NULL,bufChecker,NULL);
 	/*jeśli palaczy w buforze <2, losujemy jeszcze zasoby*/
 		for(int i=0;i<5;i++){
-			cout<<"kok"<<" SmokersInBuffer = "<<SmokersInBuffer<<"    i = "<<i<<'\n';
+			printf("kok  SmokersInBuffer = %d   i = %d\n",SmokersInBuffer,i);//cout<<"kok"<<" SmokersInBuffer = "<<SmokersInBuffer<<"    i = "<<i<<'\n';
 			
 				
 				pthread_t barm;
