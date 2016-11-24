@@ -11,12 +11,13 @@ int us=0;
 int SmokersInBuffer=0;
 pthread_mutex_t mutex[3];//trzy muteksy, każdy odpowiada za czekanie na odpowiednie dwa składniki
 pthread_cond_t cond[3];
-pthread_mutex_t barmenmut;
-pthread_cond_t barmencond;
+//pthread_mutex_t barmenmut;
+//pthread_cond_t barmencond;
 pthread_mutex_t mutexme;
+//pthread_cond_t condme;
 pthread_mutex_t mut;
 string listOfNames[10]={"Warren","Lowell","Elliot","Chas","Trent","Elvin","Edison","Bryce","Lonny","Alex"};
-int tab[3],liczba_niewypisanych_palaczy;
+int liczbawolnych[3];
 
 vector<pthread_t> smokers_threads;
 
@@ -52,6 +53,7 @@ void* bufChecker(void *){
 				cout<<readyToSmoke[0].id<<" "<<readyToSmoke[0].name<<" ";
 				cout<<readyToSmoke[0].resources<<'\n';
 				smokers[readyToSmoke[0].id].inBuffer=false;
+				liczbawolnych[smokers[readyToSmoke[0].id].resources]++;
                         	readyToSmoke.erase(readyToSmoke.begin());
 			}
 			SmokersInBuffer=SmokersInBuffer-4;		
@@ -84,12 +86,12 @@ void* barmen(void *){
 	//zakladam ze liczba_niewypisanych_palaczy==0 tutaj, inaczej tej funkcji nie wywolujemy	
 	
 	//tutaj bede czekac az pthread==0
-	puts("barman");printf("%d \n",liczba_niewypisanych_palaczy);
+	//puts("barman");printf("%d \n",liczba_niewypisanych_palaczy);
 
 	//int resources=rand()%3;
 	//cout<<resources<<"\n";
-	if(us==1){ pthread_cond_broadcast(&cond[2]);us=0;liczba_niewypisanych_palaczy=tab[2];}
-	if(us==0){ pthread_cond_broadcast(&cond[1]);us=1;liczba_niewypisanych_palaczy=tab[1];}
+	if(us==1){ pthread_cond_broadcast(&cond[2]);us=0;/*liczba_niewypisanych_palaczy=tab[2];*/}
+	if(us==0){ pthread_cond_broadcast(&cond[1]);us=1;/*liczba_niewypisanych_palaczy=tab[1];*/}
 	
        /*switch(resources){
             	case 0: pthread_cond_signal(&cond[0]);
@@ -128,9 +130,11 @@ void* func(void *smoker){
 			readyToSmoke.push_back(*smoker_in_func);
  			smoker_in_func->inBuffer=true;
 			SmokersInBuffer++;
-			liczba_niewypisanych_palaczy--;
+			liczbawolnych[smoker_in_func->resources]--;
+			if(liczbawolnych==0) pthread_mutex_unlock(&mutexme);
+			/*liczba_niewypisanych_palaczy--;
 			if(!liczba_niewypisanych_palaczy) pthread_cond_signal(&barmencond);
-			////////
+			*////////
 		}
 		
 		//pthread_mutex_unlock(&mutexme);
@@ -170,7 +174,7 @@ int main(){
 		cout<<"Smoker "<<i<<" "<<smokers[i].resources<<"\n";
 	*/
 	for(int i=0;i<NumOfSmokers;i++)
-		tab[smokers[i].resources]++;
+		liczbawolnych[smokers[i].resources]++;
 
 	//for(int i=0;i<3;i++)cout<<"xxxxx "<<tab[i]<<"\n";
 	
@@ -192,13 +196,13 @@ int main(){
 	/*jeśli palaczy w buforze <2, losujemy jeszcze zasoby*/
 		for(int i=0;i<5;i++){
 			cout<<"kok"<<" SmokersInBuffer = "<<SmokersInBuffer<<"    i = "<<i<<'\n';
-			if(SmokersInBuffer<4){
-				if(liczba_niewypisanych_palaczy>0)
-					pthread_cond_wait(&barmencond,&barmenmut);
+			
+				
 				pthread_t barm;
 				pthread_create(&barm,NULL,barmen,NULL);
 				pthread_join(barm,NULL);
-			}
+				pthread_mutex_lock(&mutexme);
+			
 				
 
 		}
